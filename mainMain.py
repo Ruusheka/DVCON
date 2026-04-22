@@ -2,7 +2,7 @@
 Task-Object Relevance Matrix Generator using Sentence-BERT
 ----------------------------------------------------------
 This script dynamically generates a matrix representing the semantic relevance 
-between predefined human tasks and user-input objects (or COCO dataset objects).
+between predefined human tasks and 80 COCO dataset objects.
 """
 
 import numpy as np
@@ -16,12 +16,13 @@ def main():
 
     # DATA DEFINITIONS
     tasks = [
-        "drink", "cut food", "take photo", "read", "ride", "play sport", 
-        "use computer", "eat", "groom", "sit", "cook", "repair", 
-        "talk on phone", "watch TV"
+        "step on something", "sit comfortably", "place flowers", 
+        "get potatoes out of fire", "water plant", "get lemon out of tea", 
+        "dig hole", "open bottle of beer", "open parcel", "serve wine", 
+        "pour sugar", "smear butter", "extinguish fire", "pound carpet"
     ]
 
-    coco_objects = [
+    objects = [
         "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light",
         "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow",
         "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee",
@@ -33,20 +34,11 @@ def main():
         "scissors", "teddy bear", "hair drier", "toothbrush"
     ]
 
-    # STEP 2: Get user input
     print("\n" + "="*60)
-    print("Task-Object Relevance Matrix Generator")
+    print("Task-Object Relevance Matrix Generator (14x80)")
     print("="*60)
-    user_input = input("Enter an object name (or comma-separated list of objects).\nLeave blank to use the default 80 COCO objects: ").strip()
 
-    if not user_input:
-        objects = coco_objects
-        print(f"\nUsing default {len(objects)} COCO objects.")
-    else:
-        objects = [obj.strip() for obj in user_input.split(',')]
-        print(f"\nUsing custom object(s): {objects}")
-
-    # STEP 3: Convert all strings into embeddings
+    # STEP 2: Convert all strings into embeddings
     print("\nEncoding tasks and objects into spatial vectors (embeddings)...")
     task_embeddings = model.encode(tasks)
     object_embeddings = model.encode(objects)
@@ -54,62 +46,83 @@ def main():
     print(f"  Task embeddings shape: {task_embeddings.shape}")
     print(f"  Object embeddings shape: {object_embeddings.shape}")
 
-    # STEP 4: Compute Cosine Similarity
+    # STEP 3: Compute Cosine Similarity
     print("Computing cosine similarities...")
     relevance_matrix = cosine_similarity(task_embeddings, object_embeddings)
 
-    # STEP 5: Scale values properly between 0 and 1
+    # STEP 4: Scale values properly between 0 and 1
     relevance_matrix_scaled = np.clip(relevance_matrix, 0.0, 1.0)
 
-    # STEP 6: Validation checks & Output
-    print("\n--- OUTPUT & VALIDATION ---")
-    print(f"Final Matrix Shape: {relevance_matrix_scaled.shape} -> must be ({len(tasks)}, {len(objects)})")
+    # STEP 5: Print Table
+    print("\n" + "="*80)
+    print("RELEVANCE MATRIX (14 Tasks vs 80 Objects)")
+    print("="*80)
     
-    if not user_input:
-        # Default verification for 80 objects
-        drink_index = tasks.index("drink")
-        drink_similarities = relevance_matrix_scaled[drink_index]
-        
-        top_5_indices = np.argsort(drink_similarities)[::-1][:5]
-        top_5_objects = [objects[idx] for idx in top_5_indices]
-        
-        print(f"\nTask examined: 'drink'")
-        print(f"Top 5 most relevant objects:")
-        for obj in top_5_objects:
-            score = drink_similarities[objects.index(obj)]
-            print(f"  ✓ {obj}: {score:.4f}")
-    else:
-        # Custom object verification - print relevance for all tasks
-        print("\nRelevance Matrix Output (Scores 0 to 1):")
-        for t_idx, task in enumerate(tasks):
-            scores = relevance_matrix_scaled[t_idx]
-            scores_str = " | ".join([f"{obj}: {score:.4f}" for obj, score in zip(objects, scores)])
-            print(f"  Task '{task:15s}': {scores_str}")
-        print("-------------------------\n")
+    # Header
+    header = f"{'Task \\ Object':<25} | " + " | ".join([f"{obj[:10]:>10}" for obj in objects])
+    print(header)
+    print("-" * len(header))
+    
+    # Rows
+    for t_idx, task in enumerate(tasks):
+        row_str = f"{task[:25]:<25} | "
+        scores = relevance_matrix_scaled[t_idx]
+        row_str += " | ".join([f"{score:>10.4f}" for score in scores])
+        print(row_str)
 
-    # STEP 7: Convert matrix precision
+    # STEP 6: Find Best Task for Each Object
+    print("\n" + "="*80)
+    print("BEST TASK FOR EACH OBJECT")
+    print("="*80)
+    
+    for o_idx, obj in enumerate(objects):
+        object_scores = relevance_matrix_scaled[:, o_idx]
+        best_task_idx = np.argmax(object_scores)
+        best_task = tasks[best_task_idx]
+        best_score = object_scores[best_task_idx]
+        print(f"Object: {obj:<15} -> Best Task: {best_task:<25} (Score: {best_score:.4f})")
+
+    # STEP 7: Find the Absolute Highest Value in the 14x80 Matrix
+    print("\n" + "="*80)
+    print("OVERALL HIGHEST RELEVANT VALUE IN ENTIRE MATRIX")
+    print("="*80)
+    
+    # Find the indices of the maximum value
+    max_idx = np.unravel_index(np.argmax(relevance_matrix_scaled, axis=None), relevance_matrix_scaled.shape)
+    best_overall_task = tasks[max_idx[0]]
+    best_overall_obj = objects[max_idx[1]]
+    best_overall_val = relevance_matrix_scaled[max_idx]
+    
+    print(f"The highest relevance score is {best_overall_val:.4f}")
+    print(f"Task   : {best_overall_task}")
+    print(f"Object : {best_overall_obj}")
+
+    # STEP 8: Convert matrix precision and save
     relevance_matrix_final = relevance_matrix_scaled.astype(np.float32)
 
-    # STEP 8: Save to binary file
-    filename = "relevance.bin"
-    print(f"\nSaving binary file to '{filename}' using np.tofile()...")
-    relevance_matrix_final.tofile(filename)
+    filename = "relevance.txt"
+    print(f"\nSaving text file to '{filename}'...")
+    with open(filename, "w") as f:
+        for t_idx, task in enumerate(tasks):
+            scores_str = "\t".join([f"{score:.6f}" for score in relevance_matrix_final[t_idx]])
+            f.write(f"{task}\t{scores_str}\n")
 
     # STEP 9: Reload file and verify
     print("Reloading saved file to verify data integrity...")
-    loaded_matrix = np.fromfile(filename, dtype=np.float32).reshape(len(tasks), len(objects))
+    loaded_matrix = []
+    loaded_tasks = []
+    with open(filename, "r") as f:
+        for line in f:
+            parts = line.strip("\n").split("\t")
+            if len(parts) > 1:
+                loaded_tasks.append(parts[0])
+                loaded_matrix.append([float(x) for x in parts[1:]])
     
-    is_identical = np.allclose(relevance_matrix_final, loaded_matrix)
+    loaded_matrix = np.array(loaded_matrix, dtype=np.float32)
     
-    print(f"  Matrix re-shape successful: {loaded_matrix.shape}")
-    if not user_input:
-        sample_val = loaded_matrix[tasks.index('drink')][objects.index('cup')]
-        print(f"  Sample value matches (drink->cup): {sample_val:.4f}")
-    else:
-        sample_val = loaded_matrix[0][0]
-        print(f"  Sample value matches (first task -> first object): {sample_val:.4f}")
-        
-    print(f"  Success: Loaded matrix matches original perfectly -> {is_identical}")
+    is_identical = np.allclose(relevance_matrix_final, loaded_matrix, atol=1e-5)
+    tasks_match = tasks == loaded_tasks
+    print(f"  Success: Loaded data matches original perfectly -> {is_identical and tasks_match}")
 
 if __name__ == "__main__":
     main()
