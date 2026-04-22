@@ -1,4 +1,4 @@
-# Task-Object Semantic Relevance Matrix
+# 1.Task-Object Semantic Relevance Matrix
 
 This project dynamically generates a semantic relevance matrix between predefined human tasks (e.g., "drink", "use computer") and objects (like COCO dataset objects). It uses AI to build a logical map of "what objects are used for what tasks" without requiring manual hard-coding of every single rule.
 
@@ -53,3 +53,73 @@ If you want the AI to strictly think of the physical fruit and ignore the tech c
    python mainMain.py
    ```
    *You can either input a custom comma-separated list of objects to generate a dynamic matrix, or press Enter to fall back to the default 80 COCO objects.*
+
+# 2.Task-Object Relevance Matrix Generator
+
+This repository contains a Python script (`Test.py`) that uses Natural Language Processing (NLP) to dynamically evaluate and score the semantic relevance between human tasks and real-world objects. 
+
+Specifically, it maps **14 predefined tasks** (derived from the COCO-Tasks dataset) against **80 standard COCO dataset objects**, generating a 14x80 relevance matrix.
+
+## 🚀 Features
+
+- **Semantic Embedding**: Uses the highly efficient Sentence-BERT model (`all-MiniLM-L6-v2`) to convert task and object names into 384-dimensional spatial vectors.
+- **Cosine Similarity**: Computes the mathematical angle (cosine similarity) between task and object vectors to determine how closely they relate contextually.
+- **Matrix Normalization**: Scales the resulting values between `0.0` and `1.0`, where `1.0` means a perfect semantic match.
+- **Console Matrix Output**: Prints the generated 14x80 matrix directly to the console as an easy-to-read table.
+- **Top Match Extraction**: 
+  - Iterates through all 80 objects to recommend the **single best task** suited for each object.
+  - Automatically scans the *entire* 14x80 matrix to find the **absolute highest relevance score**, declaring the ultimate best task-object pairing.
+- **Binary Export**: Automatically converts the matrix to 32-bit floating-point precision and saves it locally as a raw binary file (`relevance.bin`) for use in downstream machine learning or robotics applications.
+- **Data Integrity Verification**: Automatically reloads the saved binary file and cross-checks it against the original matrix to ensure zero data corruption during export.
+
+## 🛠️ Prerequisites
+
+To run this script, you will need a Python environment (Python 3.7+ recommended) with the following libraries installed:
+
+```bash
+pip install numpy sentence-transformers scikit-learn
+```
+
+## 📋 The Data
+
+### The 14 Tasks
+1. step on something
+2. sit comfortably
+3. place flowers
+4. get potatoes out of fire
+5. water plant
+6. get lemon out of tea
+7. dig hole
+8. open bottle of beer
+9. open parcel
+10. serve wine
+11. pour sugar
+12. smear butter
+13. extinguish fire
+14. pound carpet
+
+### The 80 Objects
+The script uses the standard 80 categories from the MS COCO (Common Objects in Context) dataset, including items like `person`, `bicycle`, `bottle`, `wine glass`, `couch`, `scissors`, `fire hydrant`, etc.
+
+### Output Screenshot
+![Output](image/COCO.png)
+
+## 💻 Usage
+
+Run the script directly from your terminal or command prompt:
+
+```bash
+python Test.py
+```
+
+### Expected Output Process:
+1. **Model Loading**: Sentence-BERT will initialize (might download the ~80MB model on the first run).
+2. **Embedding & Computation**: The script converts the words to vectors and computes the 14x80 similarity matrix.
+3. **Table Generation**: A large table mapping the tasks (rows) to the objects (columns) will be printed.
+4. **Best Task for Each Object**: You will see a list detailing the best-suited task for each of the 80 objects.
+5. **Overall Best Match**: The script will print the absolute highest score found in the entire matrix.
+6. **Save & Verify**: It confirms that `relevance.bin` was saved and successfully reloaded without data loss.
+
+## 📁 Output Files
+
+- `relevance.bin`: A raw binary file containing a flat array of `float32` values representing the 14x80 matrix. This can be loaded into C++, Python, or other languages using standard byte-reading functions (e.g., `numpy.fromfile()`).
