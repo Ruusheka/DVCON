@@ -68,16 +68,17 @@ def main():
     
     if not user_input:
         # Default verification for 80 objects
-        drink_index = tasks.index("drink")
-        drink_similarities = relevance_matrix_scaled[drink_index]
+        test_task = tasks[1]
+        test_index = 1
+        test_similarities = relevance_matrix_scaled[test_index]
         
-        top_5_indices = np.argsort(drink_similarities)[::-1][:5]
+        top_5_indices = np.argsort(test_similarities)[::-1][:5]
         top_5_objects = [objects[idx] for idx in top_5_indices]
         
-        print(f"\nTask examined: 'drink'")
+        print(f"\nTask examined: '{test_task}'")
         print(f"Top 5 most relevant objects:")
         for obj in top_5_objects:
-            score = drink_similarities[objects.index(obj)]
+            score = test_similarities[objects.index(obj)]
             print(f"  ✓ {obj}: {score:.4f}")
     else:
         # Custom object verification - print relevance for all tasks
@@ -85,7 +86,7 @@ def main():
         for t_idx, task in enumerate(tasks):
             scores = relevance_matrix_scaled[t_idx]
             scores_str = " | ".join([f"{obj}: {score:.4f}" for obj, score in zip(objects, scores)])
-            print(f"  Task '{task:15s}': {scores_str}")
+            print(f"  Task {task:<25}: {scores_str}")
         print("-------------------------\n")
 
     # STEP 7: Convert matrix precision
@@ -93,19 +94,31 @@ def main():
 
     # STEP 8: Save to text file
     filename = "relevance.txt"
-    print(f"\nSaving text file to '{filename}' using np.savetxt()...")
-    np.savetxt(filename, relevance_matrix_final, fmt='%.6f')
+    print(f"\nSaving formatted text file to '{filename}'...")
+    with open(filename, "w") as f:
+        header_objs = "".join([f"{obj[:10]:>12}" for obj in objects])
+        f.write(f"{'Task / Object':<28}{header_objs}\n")
+        f.write("-" * (28 + 12 * len(objects)) + "\n")
+        for t_idx, task in enumerate(tasks):
+            scores_str = "".join([f"{score:12.6f}" for score in relevance_matrix_final[t_idx]])
+            f.write(f"{task:<28}{scores_str}\n")
 
     # STEP 9: Reload file and verify
     print("Reloading saved file to verify data integrity...")
-    loaded_matrix = np.loadtxt(filename, dtype=np.float32).reshape(len(tasks), len(objects))
-    
-    is_identical = np.allclose(relevance_matrix_final, loaded_matrix)
+    loaded_matrix = []
+    with open(filename, "r") as f:
+        lines = f.readlines()
+        for line in lines[2:]:
+            scores = [float(x) for x in line[28:].split()]
+            loaded_matrix.append(scores)
+            
+    loaded_matrix = np.array(loaded_matrix, dtype=np.float32)
+    is_identical = np.allclose(relevance_matrix_final, loaded_matrix, atol=1e-5)
     
     print(f"  Matrix re-shape successful: {loaded_matrix.shape}")
     if not user_input:
-        sample_val = loaded_matrix[tasks.index('drink')][objects.index('cup')]
-        print(f"  Sample value matches (drink->cup): {sample_val:.4f}")
+        sample_val = loaded_matrix[1][objects.index('chair')]
+        print(f"  Sample value matches ({tasks[1]}->chair): {sample_val:.4f}")
     else:
         sample_val = loaded_matrix[0][0]
         print(f"  Sample value matches (first task -> first object): {sample_val:.4f}")
