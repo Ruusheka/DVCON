@@ -56,7 +56,7 @@ If you want the AI to strictly think of the physical fruit and ignore the tech c
 
 # 2.Task-Object Relevance Matrix Generator
 
-This repository contains a Python script (`Test.py`) that uses Natural Language Processing (NLP) to dynamically evaluate and score the semantic relevance between human tasks and real-world objects. 
+This repository contains a Python script (`main.py`) that uses Natural Language Processing (NLP) to dynamically evaluate and score the semantic relevance between human tasks and real-world objects. 
 
 Specifically, it maps **14 predefined tasks** (derived from the COCO-Tasks dataset) against **80 standard COCO dataset objects**, generating a 14x80 relevance matrix.
 
@@ -109,7 +109,7 @@ The script uses the standard 80 categories from the MS COCO (Common Objects in C
 Run the script directly from your terminal or command prompt:
 
 ```bash
-python Test.py
+python main.py
 ```
 
 ### Expected Output Process:
