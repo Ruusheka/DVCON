@@ -31,12 +31,15 @@ Sentence-BERT doesn't have physical eyes; it only knows the world through text f
 * Therefore, when it compares the vector for `"apple"` with the vector for `"use computer"`, the math assumes *"These two concepts show up in the same context all the time!"* and awards a high similarity score.
 
 ### Output Screenshot
-![Output](SentenceBert.png)
+![Output](image/SentenceBert.png)
 
 ### How to Fix This
 If you want the AI to strictly think of the physical fruit and ignore the tech company, you must provide more context so the AI plots the vector differently. Instead of passing just `"apple"` to the model, passing:
 `"an apple fruit"` or `"a fresh apple for eating"`
 ...will instantly shift the vector away from "computers" and move it toward "food", completely correcting the scores.
+
+### Output Screenshot
+![Output](image/SentenceBert2.png)
 
 ## Installation & Usage
 
