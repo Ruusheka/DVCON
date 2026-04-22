@@ -2,7 +2,7 @@
 Task-Object Relevance Matrix Generator using Sentence-BERT
 ----------------------------------------------------------
 This script dynamically generates a matrix representing the semantic relevance 
-between predefined human tasks and user-input objects (or COCO dataset objects).
+between predefined human tasks and 80 COCO dataset objects.
 """
 
 import numpy as np
@@ -22,7 +22,7 @@ def main():
         "pour sugar", "smear butter", "extinguish fire", "pound carpet"
     ]
 
-    coco_objects = [
+    objects = [
         "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light",
         "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow",
         "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee",
@@ -34,20 +34,11 @@ def main():
         "scissors", "teddy bear", "hair drier", "toothbrush"
     ]
 
-    # STEP 2: Get user input
     print("\n" + "="*60)
-    print("Task-Object Relevance Matrix Generator")
+    print("Task-Object Relevance Matrix Generator (14x80)")
     print("="*60)
-    user_input = input("Enter an object name (or comma-separated list of objects).\nLeave blank to use the default 80 COCO objects: ").strip()
 
-    if not user_input:
-        objects = coco_objects
-        print(f"\nUsing default {len(objects)} COCO objects.")
-    else:
-        objects = [obj.strip() for obj in user_input.split(',')]
-        print(f"\nUsing custom object(s): {objects}")
-
-    # STEP 3: Convert all strings into embeddings
+    # STEP 2: Convert all strings into embeddings
     print("\nEncoding tasks and objects into spatial vectors (embeddings)...")
     task_embeddings = model.encode(tasks)
     object_embeddings = model.encode(objects)
@@ -55,16 +46,16 @@ def main():
     print(f"  Task embeddings shape: {task_embeddings.shape}")
     print(f"  Object embeddings shape: {object_embeddings.shape}")
 
-    # STEP 4: Compute Cosine Similarity
+    # STEP 3: Compute Cosine Similarity
     print("Computing cosine similarities...")
     relevance_matrix = cosine_similarity(task_embeddings, object_embeddings)
 
-    # STEP 5: Scale values properly between 0 and 1
+    # STEP 4: Scale values properly between 0 and 1
     relevance_matrix_scaled = np.clip(relevance_matrix, 0.0, 1.0)
 
-    # STEP 6: Print Table
+    # STEP 5: Print Table
     print("\n" + "="*80)
-    print("RELEVANCE MATRIX (Tasks vs Objects)")
+    print("RELEVANCE MATRIX (14 Tasks vs 80 Objects)")
     print("="*80)
     
     # Header
@@ -79,7 +70,7 @@ def main():
         row_str += " | ".join([f"{score:>10.4f}" for score in scores])
         print(row_str)
 
-    # STEP 7: Find Best Task for Each Object
+    # STEP 6: Find Best Task for Each Object
     print("\n" + "="*80)
     print("BEST TASK FOR EACH OBJECT")
     print("="*80)
@@ -90,6 +81,21 @@ def main():
         best_task = tasks[best_task_idx]
         best_score = object_scores[best_task_idx]
         print(f"Object: {obj:<15} -> Best Task: {best_task:<25} (Score: {best_score:.4f})")
+
+    # STEP 7: Find the Absolute Highest Value in the 14x80 Matrix
+    print("\n" + "="*80)
+    print("OVERALL HIGHEST RELEVANT VALUE IN ENTIRE MATRIX")
+    print("="*80)
+    
+    # Find the indices of the maximum value
+    max_idx = np.unravel_index(np.argmax(relevance_matrix_scaled, axis=None), relevance_matrix_scaled.shape)
+    best_overall_task = tasks[max_idx[0]]
+    best_overall_obj = objects[max_idx[1]]
+    best_overall_val = relevance_matrix_scaled[max_idx]
+    
+    print(f"The highest relevance score is {best_overall_val:.4f}")
+    print(f"Task   : {best_overall_task}")
+    print(f"Object : {best_overall_obj}")
 
     # STEP 8: Convert matrix precision and save
     relevance_matrix_final = relevance_matrix_scaled.astype(np.float32)
